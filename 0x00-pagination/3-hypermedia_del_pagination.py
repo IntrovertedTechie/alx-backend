@@ -7,9 +7,8 @@ import csv
 import math
 from typing import List, Dict
 
-
 class Server:
-    """Server class to paginate a database from a file Popular_Baby_Names.csv.
+    """Server class to paginate a database of popular baby names.
     """
     DATA_FILE = "Popular_Baby_Names.csv"
 
@@ -40,27 +39,55 @@ class Server:
         return self.__indexed_dataset
 
     def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
-        """hyper index method
+        """Paginate based on `index`, `page_size`, and the current state of the dataset (deletion resilience)"""
+        idx_ds = self.indexed_dataset()
+        if index is None:
+            index = 0
+        assert index >= 0 and index < len(idx_ds)
 
-        Args:
-            index (int, optional): Index of element. Defaults to None.
-            page_size (int, optional): Size of the page. Defaults to 10.
+        items = []
+        i = index
+        while len(items) < page_size and i <= max(idx_ds):
+            if i in idx_ds:
+                items.append(idx_ds[i])
+            i += 1
 
-        Returns:
-            Dict: dictionary with a key-value pairs
-        """
-        assert(type(index) == int and type(page_size) == int)
-        assert(0 <= index < len(self.dataset()))
-        dataset = self.indexed_dataset()
-        data = []
-        next_index = index
-        for _ in range(page_size):
-            while not dataset.get(next_index):
-                next_index += 1
-            data.append(dataset.get(next_index))
-            next_index += 1
+        next_index = i
         return {
             'index': index,
             'next_index': next_index,
-            'page_size': page_size,
-            'data': data
+            'page_size': len(items),
+            'data': items
+        }
+
+
+if __name__ == "__main__":
+    server = Server()
+    server.indexed_dataset()
+
+    try:
+        server.get_hyper_index(300000, 100)
+    except AssertionError:
+        print("AssertionError raised when out of range")        
+
+    index = 3
+    page_size = 2
+
+    print("Nb items: {}".format(len(server._Server__indexed_dataset)))
+
+    # 1- request first index
+    res = server.get_hyper_index(index, page_size)
+    print(res)
+
+    # 2- request next index
+    print(server.get_hyper_index(res.get('next_index'), page_size))
+
+    # 3- remove the first index
+    del server._Server__indexed_dataset[res.get('index')]
+    print("Nb items: {}".format(len(server._Server__indexed_dataset)))
+
+    # 4- request again the initial index -> the first data retrieves is not the same as the first request
+    print(server.get_hyper_index(index, page_size))
+
+    # 5- request again initial next index -> same data page as the request 2-
+    print(server.get_hyper_index(res.get('next_index'), page_size))
