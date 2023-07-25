@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-  """
-  First In First Out module
-  """
+   
+ """ First In First Out module"""
 BaseCaching = __import__("base_caching").BaseCaching
 
 
