@@ -4,7 +4,6 @@ LIFO Cache module
 """
 from base_caching import BaseCaching
 
-
 class LIFOCache(BaseCaching):
     """LIFO Cache class
     """
@@ -22,7 +21,7 @@ class LIFOCache(BaseCaching):
             return
 
         if len(self.cache_data) >= self.MAX_ITEMS:
-            # If cache is full, remove the last item)
+            # If cache is full, remove the last item that was put in the cache (LIFO)
             last_key = self.order_of_access.pop()
             del self.cache_data[last_key]
             print("DISCARD:", last_key)
