@@ -12,9 +12,7 @@ class LIFOCache(BaseCaching):
         super().__init__()
 
     def put(self, key, item):
-        """ 
-           Put 
-        """
+        """Put"""
         if key and item:
             if self.cache_data.get(key):
                 self.stack.remove(key)

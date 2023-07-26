@@ -3,6 +3,7 @@
 """
 from base_caching import BaseCaching
 
+
 class MRUCache(BaseCaching):
     """MRU Cache class
     """
@@ -23,7 +24,7 @@ class MRUCache(BaseCaching):
         if key in self.cache_data:
             self.access_order.remove(key)
         elif len(self.cache_data) >= self.MAX_ITEMS:
-            # If cache is full, remove the most recently used item (last item in access_order)
+            # If cache is full, remove the most r)
             mru_key = self.access_order.pop()
             del self.cache_data[mru_key]
             print("DISCARD:", mru_key)
@@ -39,7 +40,7 @@ class MRUCache(BaseCaching):
         if key is None or key not in self.cache_data:
             return None
 
-        # Move the accessed key to the end of the access_order list (most recently used)
+        # Move the accessed key to the end)
         self.access_order.remove(key)
         self.access_order.append(key)
 
