@@ -15,9 +15,7 @@ class BasicCache(BaseCaching):
         super().__init__()
 
     def put(self, key, item):
-        """
-        puts an item 
-        """
+        """puts an item"""
         if key and item:
             self.cache_data[key] = item
 
