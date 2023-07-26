@@ -4,6 +4,7 @@ FIFO Cache module
 """
 from base_caching import BaseCaching
 
+
 class FIFOCache(BaseCaching):
     """FIFO Cache class
     """
@@ -21,7 +22,7 @@ class FIFOCache(BaseCaching):
             return
 
         if len(self.cache_data) >= self.MAX_ITEMS:
-            # If cache is full, remove the first item that was put in the cache (FIFO)
+            # If cache is full, remove the first )
             oldest_key = self.order_of_access.pop(0)
             del self.cache_data[oldest_key]
             print("DISCARD:", oldest_key)
@@ -38,4 +39,3 @@ class FIFOCache(BaseCaching):
             return None
 
         return self.cache_data[key]
-
