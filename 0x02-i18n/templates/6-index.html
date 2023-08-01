@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="{{ g.locale }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{% trans home_title %}</title>
+</head>
+<body>
+    <h1>{% trans home_header %}</h1>
+    <p>{% if g.user %}
+        {% trans logged_in_as username=g.user.name %}{% else %}
+        {% trans not_logged_in %}{% endif %}
+    </p>
+</body>
+</html>

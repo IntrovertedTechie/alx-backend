@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="{{ g.locale }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{% trans home_title %}</title>
+</head>
+<body>
+    <h1>{% trans home_header %}</h1>
+    <p>{% trans current_time_is current_time=g.timezone.localize(datetime.utcnow()).strftime('%b %d, %Y, %I:%M:%S %p') %}</p>
+</body>
+</html>
