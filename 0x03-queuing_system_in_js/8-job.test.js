@@ -1,56 +1,87 @@
+#!/usr/bin/yarn test
+import sinon from 'sinon';
 import { expect } from 'chai';
-import kue from 'kue';
-import { createPushNotificationsJobs } from './8-job'; // Update with the correct path
+import { createQueue } from 'kue';
+import createPushNotificationsJobs from './8-job.js';
 
-describe('createPushNotificationsJobs', function () {
-  let queue;
+describe('createPushNotificationsJobs', () => {
+  const BAYO = sinon.spy(console);
+  const QUEUE = createQueue({ name: 'push_notification_code_test' });
 
-  before(function () {
-    // Create a Kue queue
-    queue = kue.createQueue();
+  before(() => {
+    QUEUE.testMode.enter(true);
   });
 
-  beforeEach(function () {
-    // Enable test mode and clear the queue before each test
-    queue.testMode.enter();
-    queue.testMode.clear();
+  after(() => {
+    QUEUE.testMode.clear();
+    QUEUE.testMode.exit();
   });
 
-  afterEach(function () {
-    // Exit test mode and clear the queue after each test
-    queue.testMode.exit();
-    queue.testMode.clear();
+  afterEach(() => {
+    BAYO.log.resetHistory();
   });
 
-  after(function () {
-    // Shutdown the Kue queue after all tests are done
-    queue.shutdown(1000, function () {
-      console.log('Queue has been shut down.');
+  it('displays an error message if jobs is not an array', () => {
+    expect(
+      createPushNotificationsJobs.bind(createPushNotificationsJobs, {}, QUEUE)
+    ).to.throw('Jobs is not an array');
+  });
+
+  it('adds jobs to the queue with the correct type', (done) => {
+    expect(QUEUE.testMode.jobs.length).to.equal(0);
+    const jobInfos = [
+      {
+        phoneNumber: '44556677889',
+        message: 'Use the code 1982 to verify your account',
+      },
+      {
+        phoneNumber: '98877665544',
+        message: 'Use the code 1738 to verify your account',
+      },
+    ];
+    createPushNotificationsJobs(jobInfos, QUEUE);
+    expect(QUEUE.testMode.jobs.length).to.equal(2);
+    expect(QUEUE.testMode.jobs[0].data).to.deep.equal(jobInfos[0]);
+    expect(QUEUE.testMode.jobs[0].type).to.equal('push_notification_code_3');
+    QUEUE.process('push_notification_code_3', () => {
+      expect(
+        BAYO.log
+          .calledWith('Notification job created:', QUEUE.testMode.jobs[0].id)
+      ).to.be.true;
+      done();
     });
   });
 
-  it('displays an error message if jobs is not an array', function () {
-    // Call the createPushNotificationsJobs function with non-array input
-    const nonArrayInput = 'not an array';
-    createPushNotificationsJobs(queue, nonArrayInput);
-
-    // Check if the queue is empty
-    expect(queue.testMode.jobs.length).to.equal(0);
+  it('registers the progress event handler for a job', (done) => {
+    QUEUE.testMode.jobs[0].addListener('progress', () => {
+      expect(
+        BAYO.log
+          .calledWith('Notification job', QUEUE.testMode.jobs[0].id, '25% complete')
+      ).to.be.true;
+      done();
+    });
+    QUEUE.testMode.jobs[0].emit('progress', 25);
   });
 
-  it('creates two new jobs in the queue', function () {
-    // Call the createPushNotificationsJobs function with an array of job data
-    const jobData = [{ message: 'Message 1' }, { message: 'Message 2' }];
-    createPushNotificationsJobs(queue, jobData);
-
-    // Check if the queue contains two jobs
-    expect(queue.testMode.jobs.length).to.equal(2);
-
-    // Optionally, you can perform additional assertions on the created jobs
-    const jobs = queue.testMode.jobs;
-    expect(jobs[0].data.message).to.equal('Message 1');
-    expect(jobs[1].data.message).to.equal('Message 2');
+  it('registers the failed event handler for a job', (done) => {
+    QUEUE.testMode.jobs[0].addListener('failed', () => {
+      expect(
+        BAYO.log
+          .calledWith('Notification job', QUEUE.testMode.jobs[0].id, 'failed:', 'Failed to send')
+      ).to.be.true;
+      done();
+    });
+    QUEUE.testMode.jobs[0].emit('failed', new Error('Failed to send'));
   });
 
-  // Add more test cases as needed
+  it('registers the complete event handler for a job', (done) => {
+    QUEUE.testMode.jobs[0].addListener('complete', () => {
+      expect(
+        BAYO.log
+          .calledWith('Notification job', QUEUE.testMode.jobs[0].id, 'completed')
+      ).to.be.true;
+      done();
+    });
+    QUEUE.testMode.jobs[0].emit('complete');
+  });
 });
