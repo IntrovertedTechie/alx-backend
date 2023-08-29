@@ -1,46 +1,38 @@
-import kue from 'kue';
+#!/usr/bin/yarn dev
+import { createQueue, Job } from 'kue';
 
-// Array of blacklisted phone numbers
-const blacklistedNumbers = ['4153518780', '4153518781'];
+const BLACKLISTED_NUMBERS = ['4153518780', '4153518781'];
+const queue = createQueue();
 
-// Function to send notifications
+/**
+ * Sends a push notification to a user.
+ * @param {String} phoneNumber
+ * @param {String} message
+ * @param {Job} job
+ * @param {*} done
+ */
 const sendNotification = (phoneNumber, message, job, done) => {
-  job.progress(0, 100); // Track progress at 0%
-
-  if (blacklistedNumbers.includes(phoneNumber)) {
-    job.fail(new Error(`Phone number ${phoneNumber} is blacklisted`));
-  } else {
-    job.progress(50); // Track progress at 50%
-    console.log(`Sending notification to ${phoneNumber}, with message: ${message}`);
-  }
-
-  done();
+  let total = 2, pending = 2;
+  let sendInterval = setInterval(() => {
+    if (total - pending <= total / 2) {
+      job.progress(total - pending, total);
+    }
+    if (BLACKLISTED_NUMBERS.includes(phoneNumber)) {
+      done(new Error(`Phone number ${phoneNumber} is blacklisted`));
+      clearInterval(sendInterval);
+      return;
+    }
+    if (total === pending) {
+      console.log(
+        `Sending notification to ${phoneNumber},`,
+        `with message: ${message}`,
+      );
+    }
+    --pending || done();
+    pending || clearInterval(sendInterval);
+  }, 1000);
 };
 
-// Create a Kue queue with concurrency of 2 (process 2 jobs at a time)
-const queue = kue.createQueue({ concurrency: 2 });
-
-// Process jobs in the queue
 queue.process('push_notification_code_2', 2, (job, done) => {
-  const { phoneNumber, message } = job.data;
-  sendNotification(phoneNumber, message, job, done);
+  sendNotification(job.data.phoneNumber, job.data.message, job, done);
 });
-
-// Log when job processing starts
-console.log('Processing notification jobs...');
-
-// Log when job processing is complete
-queue.on('idle', () => {
-  console.log('Notification job processing complete.');
-});
-
-// Log when jobs are removed from the queue
-queue.on('job remove', (id) => {
-  console.log(`Job ${id} removed from queue.`);
-});
-
-// Process any active jobs in the queue
-queue.active();
-
-// Log when job processing is started
-console.log('Notification job processing started.');
